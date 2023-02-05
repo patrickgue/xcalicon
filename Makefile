@@ -22,8 +22,8 @@ PKGLIBS=	x11 xpm
 CC?=		cc
 CFLAGS+=	-O2 -Wall -Wunused \
 		-Wmissing-prototypes -Wstrict-prototypes -Wpointer-sign \
-		`pkg-config --cflags ${PKGLIBS}`
-LDFLAGS+=	`pkg-config --libs ${PKGLIBS}`
+		-I${X11BASE}/include
+LDFLAGS+=	-L${X11BASE}/lib -lX11 -lxpm
 
 BINDIR=		$(PREFIX)/bin
 

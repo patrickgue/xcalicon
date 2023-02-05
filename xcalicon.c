@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <sys/fcntl.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -32,6 +33,7 @@
 
 #include "icons/calendar.xpm"
 #include "icons/digits.xpm"
+#include "icons/digits_small.xpm"
 
 struct {
 	Display *dpy;
@@ -46,6 +48,9 @@ struct {
 	Pixmap digits_pm_mask;
 	XpmAttributes digits_pm_attrs;
 	Pixmap icon_pm;
+        Pixmap digits_small_pm;
+        Pixmap digits_small_pm_mask;
+        XpmAttributes digits_small_pm_attrs;
 } xinfo = { 0 };
 
 extern char *__progname;
@@ -98,8 +103,8 @@ main(int argc, char* argv[])
 #endif
 
 	/* setup exit handler pipe that we'll poll on */
-	if (pipe2(exit_msg, O_CLOEXEC) != 0)
-		err(1, "pipe2");
+	if (pipe(exit_msg) != 0)
+		err(1, "pipe");
 	act.sa_handler = killer;
 	act.sa_flags = 0;
 	sigaction(SIGTERM, &act, NULL);
@@ -129,6 +134,12 @@ main(int argc, char* argv[])
 	    RootWindow(xinfo.dpy, xinfo.screen),
 	    digits_xpm, &xinfo.digits_pm, &xinfo.digits_pm_mask,
 	    &xinfo.digits_pm_attrs) != 0)
+		errx(1, "XpmCreatePixmapFromData failed");
+
+        if (XpmCreatePixmapFromData(xinfo.dpy,
+	    RootWindow(xinfo.dpy, xinfo.screen),
+	    digits_small_xpm, &xinfo.digits_small_pm, &xinfo.digits_small_pm_mask,
+	    &xinfo.digits_small_pm_attrs) != 0)
 		errx(1, "XpmCreatePixmapFromData failed");
 
 	XGetWindowAttributes(xinfo.dpy, xinfo.win, &xgwa);
@@ -224,7 +235,7 @@ redraw_icon(int update_win)
 	XWindowAttributes xgwa;
 	char title[50];
 	char *titlep = (char *)&title;
-	int rc, dwidth, xo, yo;
+	int rc, dwidth, xo, yo, update_icon = 0;
 	struct tm *tm;
 	time_t now;
 
@@ -244,17 +255,18 @@ redraw_icon(int update_win)
 			errx(1, "XStringListToTextProperty");
 		XSetWMIconName(xinfo.dpy, xinfo.win, &title_prop);
 		XStoreName(xinfo.dpy, xinfo.win, title);
+                update_icon = 1;
 	}
 
-	if (tm->tm_mday == last_day && !update_win)
-		return;
+//	if (tm->tm_mday == last_day && !update_win)
+//		return;
 
-	if (tm->tm_mday != last_day) {
+	if (update_icon) { // (tm->tm_mday != last_day) {
 #ifdef DEBUG
 		printf("day changed, rebuilding icon\n");
 #endif
 		last_day = tm->tm_mday;
-
+                update_icon = 0;
 		XCopyArea(xinfo.dpy, xinfo.calendar_pm, xinfo.icon_pm, xinfo.gc,
 		    0, 0,
 		    xinfo.calendar_pm_attrs.width,
@@ -269,22 +281,53 @@ redraw_icon(int update_win)
 			    0,
 			    dwidth,
 			    xinfo.digits_pm_attrs.height,
-			    19, 28);
+			    19, 24);
 			XCopyArea(xinfo.dpy,
 			    xinfo.digits_pm, xinfo.icon_pm, xinfo.gc,
 			    dwidth * (tm->tm_mday % 10),
 			    0,
 			    dwidth,
 			    xinfo.digits_pm_attrs.height,
-			    33, 28);
+			    33, 24);
 		} else {
 			XCopyArea(xinfo.dpy,
 			    xinfo.digits_pm, xinfo.icon_pm, xinfo.gc,
 			    dwidth * tm->tm_mday, 0,
 			    dwidth,
 			    xinfo.digits_pm_attrs.height,
-			    26, 28);
+			    26, 24);
 		}
+
+                
+                XCopyArea(xinfo.dpy,
+                          xinfo.digits_small_pm, xinfo.icon_pm, xinfo.gc,
+                          4 * (tm->tm_hour/10), 0,
+                          4,5,
+                          22, 44);
+
+                XCopyArea(xinfo.dpy,
+                          xinfo.digits_small_pm, xinfo.icon_pm, xinfo.gc,
+                          4 * (tm->tm_hour%10), 0,
+                          4,5,
+                          26, 44);
+
+                XCopyArea(xinfo.dpy,
+                          xinfo.digits_small_pm, xinfo.icon_pm, xinfo.gc,
+                          4 * 10, 0,
+                          4,5,
+                          30, 44);
+                
+                XCopyArea(xinfo.dpy,
+                          xinfo.digits_small_pm, xinfo.icon_pm, xinfo.gc,
+                          4 * (tm->tm_min/10), 0,
+                          4,5,
+                          34, 44);
+
+                XCopyArea(xinfo.dpy,
+                          xinfo.digits_small_pm, xinfo.icon_pm, xinfo.gc,
+                          4 * (tm->tm_min%10), 0,
+                          4,5,
+                          38, 44);
 
 		/* update the icon */
 		xinfo.hints.icon_pixmap = xinfo.icon_pm;
