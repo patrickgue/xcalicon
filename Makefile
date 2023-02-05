@@ -22,8 +22,16 @@ PKGLIBS=	x11 xpm
 CC?=		cc
 CFLAGS+=	-O2 -Wall -Wunused \
 		-Wmissing-prototypes -Wstrict-prototypes -Wpointer-sign \
-		-I${X11BASE}/include
-LDFLAGS+=	-L${X11BASE}/lib -lX11 -lxpm
+		-I${X11BASE}/include \
+		`pkg-config --cflags ${PKGLIBS}`
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	LDFLAGS+=	`pkg-config --libs ${PKGLIBS}`
+endif
+ifeq ($(UNAME_S),Darwin)
+	LDFLAGS+=	-L${X11BASE}/lib -lX11 -lXpm
+endif
 
 BINDIR=		$(PREFIX)/bin
 
