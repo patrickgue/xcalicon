@@ -4,7 +4,7 @@ A small date and time widget for X11 which is intended to be iconified all the
 time to remain on the desktop.
 Its icon and window title indicate the current day and time.
 
-![screenshot](https://user-images.githubusercontent.com/9888/216119384-ccd12d7e-f87c-426b-b9f6-de8cfd8b754e.png)
+![screenshot](screenshot.png)
 
 It was written to work with
 [progman](https://github.com/jcs/progman)
